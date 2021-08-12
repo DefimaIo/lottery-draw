@@ -3,27 +3,37 @@ from mysql.connector import cursor
 from decouple import config
 
 drawId = "1"
+numberOfWinners = 3
 conn = None
 
 def close_draw():
     sql = "UPDATE lottery_draws SET status = 'closed' WHERE id = " + drawId
     cursor.execute(sql)
 
-def draw_winner():
+def draw_winners():
     # Gewinner ziehen
-    sql = "SELECT id, ticketNo FROM lottery_tickets WHERE drawId =" + drawId + " ORDER BY RAND() LIMIT 1"
+    ticketIds = []
+    userIds = []
+
+    for i in range(numberOfWinners):
+        if ticketIds and len(ticketIds) == 1:
+            sql = "SELECT id, userId FROM lottery_tickets WHERE drawId = " + drawId + " AND id != " + str(ticketIds[0]) + " AND userId != " + str(userIds[0]) + " ORDER BY RAND() LIMIT 1"
+        else:
+            sql = ("SELECT id, userId FROM lottery_tickets WHERE drawId = " + drawId + (" AND id NOT IN {} AND userId NOT IN {}" if ticketIds else "") + " ORDER BY RAND() LIMIT 1").format(tuple(ticketIds), tuple(userIds))
+        print(sql, ticketIds, userIds)
+        cursor.execute(sql)
+        result = cursor.fetchone()
+        ticketIds.append(result[0])
+        userIds.append(result[1])
+
+    # Gewinnertickets in Datenbank vermerken
+    sql = ("UPDATE lottery_tickets SET status = 'drawn' WHERE id IN {} AND drawId = " + drawId).format(tuple(ticketIds))
+    print(sql)
     cursor.execute(sql)
-    result = cursor.fetchone()
-    id = result[0]
 
-    # Gewinnerticket in Datenbank vermerken
-    sql = "UPDATE lottery_tickets SET status = 'drawn' WHERE id = " + str(id)
-    cursor.execute(sql)
-
-    return id
-
-def devalueTicketsExcept(winnerTicketId):
-    sql = "UPDATE lottery_tickets SET status = 'closed' WHERE id != " + str(winnerTicketId)
+def devalueTicketsExcept():
+    sql = "UPDATE lottery_tickets SET status = 'closed' WHERE drawId = " + drawId + " AND status != 'drawn'"
+    print(sql)
     cursor.execute(sql)
 
 try:
@@ -41,12 +51,12 @@ try:
     result = cursor.fetchone()
 
     if result is None:
-        print("Fehler: Ziehung wurde bereits ausgewertet")
+        print("Fehler: Ziehung wurde bereits ausgewertet oder existiert nicht")
         quit()
 
     close_draw()
-    ticketId = draw_winner()
-    devalueTicketsExcept(ticketId)
+    draw_winners()
+    devalueTicketsExcept()
 
     conn.commit()
     print("Ziehung erfolgreich ausgewertet")
