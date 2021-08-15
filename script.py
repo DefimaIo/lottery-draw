@@ -11,7 +11,6 @@ def close_draw():
     cursor.execute(sql)
 
 def draw_winners():
-    # Gewinner ziehen
     ticketIds = []
     userIds = []
 
@@ -26,7 +25,7 @@ def draw_winners():
         ticketIds.append(result[0])
         userIds.append(result[1])
 
-    # Gewinnertickets in Datenbank vermerken
+    # Note the winning tickets in database
     sql = ("UPDATE lottery_tickets SET status = 'drawn' WHERE id IN {} AND drawId = " + drawId).format(tuple(ticketIds))
     print(sql)
     cursor.execute(sql)
@@ -38,10 +37,10 @@ def devalue_tickets():
 
 try:
     conn = mysql.connector.connect(
-    host=config("DB_HOST"),
-    user=config("DB_USER"),
-    password=config("DB_PASSWORD"),
-    database=config("DB_NAME")
+        host=config("DB_HOST"),
+        user=config("DB_USER"),
+        password=config("DB_PASSWORD"),
+        database=config("DB_NAME")
     )
 
     cursor = conn.cursor()
@@ -51,7 +50,7 @@ try:
     result = cursor.fetchone()
 
     if result is None:
-        print("Fehler: Ziehung wurde bereits ausgewertet oder existiert nicht")
+        print("Error: The draw has already been evaluated or does not exist")
         quit()
 
     close_draw()
@@ -59,7 +58,7 @@ try:
     devalue_tickets()
 
     conn.commit()
-    print("Ziehung erfolgreich ausgewertet")
+    print("Draw successfully evaluated")
 
 except mysql.connector.Error as error:
     print("Failed to update record to database rollback: {}".format(error))
