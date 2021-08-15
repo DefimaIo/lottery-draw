@@ -31,7 +31,7 @@ def draw_winners():
     print(sql)
     cursor.execute(sql)
 
-def devalueTicketsExcept():
+def devalue_tickets():
     sql = "UPDATE lottery_tickets SET status = 'closed' WHERE drawId = " + drawId + " AND status != 'drawn'"
     print(sql)
     cursor.execute(sql)
@@ -56,7 +56,7 @@ try:
 
     close_draw()
     draw_winners()
-    devalueTicketsExcept()
+    devalue_tickets()
 
     conn.commit()
     print("Ziehung erfolgreich ausgewertet")
